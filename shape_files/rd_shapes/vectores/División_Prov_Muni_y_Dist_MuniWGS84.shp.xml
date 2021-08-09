@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="es"><Esri><CreaDate>20161021</CreaDate><CreaTime>22312700</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><DataProperties><lineage><Process ToolSource="c:\program files (x86)\arcgis\desktop10.3\ArcToolbox\Toolboxes\Data Management Tools.tbx\CalculateField" Date="20161021" Time="223127">CalculateField "Municipios y Distritos Municipales" abrev left( [Nombre],2)+"." VB #</Process></lineage></DataProperties></Esri></metadata>
