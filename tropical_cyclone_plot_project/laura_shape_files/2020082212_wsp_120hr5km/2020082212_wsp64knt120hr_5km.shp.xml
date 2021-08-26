@@ -3,28 +3,24 @@
 <citation>
 <citeinfo>
 <origin>National Hurricane Center</origin>
-<pubdate>07-19-2021</pubdate>
-<title>2021071912_wsp34knt120hr_halfDeg</title>
+<pubdate>08-22-2020</pubdate>
+<title>2020082212_wsp64knt120hr_5km</title>
 <geoform>vector digital data</geoform>
 <onlink>http://www.nhc.noaa.gov/gis</onlink>
 </citeinfo>
 </citation>
 <descript>
-<abstract>
-The 34 knot, 120 hour cumulative wind speed probabilities show 
-probabilites of sustained (1-minute average) surface (10-meter altitude) 
-wind speeds equal to or exceeding 34 kt...39 mph
-(tropical storm force) at a regualary spaced (1/2 degree) grid of points.  The 
-cumulative periods begin at the start of the forecat period and extend through 
-the entire 5-day forecast period from 0-120 hours.
+<abstract>The 64 knot, 120 hour cumulative wind speed probabilities show 
+probabilities of sutained (1-minute average) surface (10-meter altitude) wind
+speeds equal to or exceeding 64 kt...74 mph (tropical storm force) at
+a regulary spaced (5 km) grid of points.  The cumulative periods
+begin at the start ofthe forecast period and extend through the entire
+5-day forecat period from 0-120 hours.
+
+This shapefile was created by interpolating the requlary spaced 1/2 detree grid of 
+points into a regularly spaced 5 km grid of points.
 </abstract>
 <purpose>
-The 34 knot, 120 hour cumulative surface wind speed probabilites 
-are used to assess the overall risk of experiencing winds of at least 39 mph 
-(34 knots) at a location during the period between hour 0 (the beginning 
-of the forecast) and day 5 (120 hours).  This data is based on the official 
-National Hurricane Center (NHC) track, intensity, and wind radii forecast, and
-on NHC forecast error statistics for those forecasts variables during recent years.
 
 These data are intended for geographic display and analysis at the national level 
 and for large regional areas.  The data should be displayed and analyzed at scales 
@@ -35,7 +31,7 @@ Oceanic and Atmospheric Administration in the use of these data.
 <timeperd>
 <timeinfo>
 <sngdate>
-<caldate>210719/1200</caldate>
+<caldate>200822/1200</caldate>
 </sngdate>
 </timeinfo>
 <current></current>
@@ -165,7 +161,7 @@ Oceanic and Atmospheric Administration in the use of these data.
 </stdorder>
 </distinfo>
 <metainfo>
-<metd>07-19-2021</metd>
+<metd>08-22-2020</metd>
 <metc>
 <cntinfo>
 <cntorgp>
