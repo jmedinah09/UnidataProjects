@@ -1,6 +1,18 @@
+import pandas
 import geopandas 
+import matplotlib.pyplot as plt
+from   matplotlib.pyplot import imread
+import matplotlib.patches as mpatches
+import numpy as np
+import cartopy.crs as ccrs
+import cartopy.feature as cfeat
+from   cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+from   shapely.geometry import Point, LineString, Polygon, MultiPoint
+
 import requests
 from   zipfile import ZipFile
+import datetime 
+
 
 class NhcDownloaderBot:
     def __init__(self, storm_number = 1, year = 2020):
@@ -95,3 +107,75 @@ class NhcDownloaderBot:
         cls.wsp_34_gdf_polygons   = _.nhc_gis_downloader(_.file_names, _.urls, _.gdf_names)[_.file_names[5]][0]
         cls.wsp_50_gdf_polygons   = _.nhc_gis_downloader(_.file_names, _.urls, _.gdf_names)[_.file_names[5]][1]
         cls.wsp_64_gdf_polygons   = _.nhc_gis_downloader(_.file_names, _.urls, _.gdf_names)[_.file_names[5]][2]
+        
+        
+        
+        
+class MapTemplate:
+    def __init__(self, extent     = [-72, -68, 17.5, 20]):
+        self.extent               = extent
+        self.path                 = path              = '../shape_files/rd_shapes/vectores'
+        #self.hispaniola_gdf       = hispaniola_gdf    = geopandas.read_file(f'{ self.path }/hispaniola.shp').to_crs("EPSG:4326")
+        #self.municipios           = municipios        = geopandas.read_file(f'{ self.path }/División_Prov_Muni_y_Dist_MuniUTM.shp').to_crs("EPSG:4326")
+        #self.limite_gdf           = limite_gdf        = geopandas.read_file(f'{ self.path }/limite_frontera.shp').to_crs("EPSG:4326")
+        self.silueta_haiti_gdf    = silueta_haiti_gdf = geopandas.read_file(f'{ self.path }/silueta_haiti.shp').to_crs("EPSG:4326")
+        #self.silueta_rd_gdf       = silueta_rd_gdf    = geopandas.read_file(f'{ self.path }/silueta_rd.shp').to_crs("EPSG:4326")
+        self.provincias_gdf       = provincias_gdf    = geopandas.read_file(f'{ self.path }/PROVINCIAS.shp').to_crs("EPSG:4326")
+        #self.rios_gdf             = rios_gdf          = geopandas.read_file(f'{ self.path }/RIOS.shp').to_crs("EPSG:4326")
+        #self.cuencas_hidro_gdf    = cuencas_hidro_gdf = geopandas.read_file(f'{ self.path }/Cuencas_Hidrograficas_RD.shp').to_crs("EPSG:4326")
+        #self.cuencas_presas_gdf   = cuencas_presas_gdf= geopandas.read_file(f'{ self.path }/Presas-CuencasAporte.shp').to_crs("EPSG:4326")
+        #self.states_provinces_gdf = geopandas.read_file(f'{self.path}/ne_10m_admin_1_states_provinces.shp')
+        self.land_gdf             = geopandas.read_file(f'{self.path}/ne_10m_land.shp')
+        #self.ocean_gdf            = geopandas.read_file(f'{self.path}/ne_10m_ocean.shp')
+        self.coastline_gdf        = geopandas.read_file(f'{self.path}/ne_10m_coastline.shp')
+        self.countries_gdf        = geopandas.read_file(f'{self.path}/ne_10m_admin_0_countries.shp')
+        
+        self.map_crs = ccrs.PlateCarree()
+    data_crs= ccrs.PlateCarree()
+        
+    def base_map(self):
+        fig = plt.figure(figsize=(20, 20))
+        ax  = plt.subplot(1, 1, 1, projection = self.map_crs)
+
+        ax.add_feature(cfeat.OCEAN.with_scale('10m'))
+
+        grid_lines = ax.gridlines(draw_labels=True)
+        grid_lines.xformatter = LONGITUDE_FORMATTER
+        grid_lines.yformatter = LATITUDE_FORMATTER
+        return ax
+        
+    @classmethod    
+    def zoomed_map(cls):
+        _  = MapTemplate()
+        ax = _.base_map()
+        ax.set_extent([-72, -68, 17.5, 20])
+#         ax.add_geometries(_.hispaniola_gdf['geometry'], crs=cls.data_crs, facecolor='none',
+#                  edgecolor='black', linewidth=0.5, alpha=0.7)
+#         ax.add_geometries(_.limite_gdf['geometry'], crs=cls.data_crs, facecolor='none',
+#                   edgecolor='black', linewidth=1, alpha=0.7)
+        ax.add_geometries(_.silueta_haiti_gdf['geometry'], crs=cls.data_crs, facecolor='none',
+                 edgecolor='black', linewidth=0.5)
+#         ax.add_geometries(_.silueta_rd_gdf['geometry'], crs=cls.data_crs, facecolor='none',
+#                  edgecolor='black', linewidth=0.5, zorder = 10)
+        ax.add_geometries(_.provincias_gdf['geometry'], crs=cls.data_crs, facecolor='honeydew',
+                 edgecolor='black', linewidth=0.5)
+        return ax
+        
+    @classmethod     
+    def wide_map(cls):
+        
+        _  = MapTemplate()
+        ax = _.base_map()
+        ax.set_extent([-100, 0, 0, 40])
+
+#         ax.add_geometries(self.states_provinces_gdf['geometry'], crs=data_crs, facecolor='none',
+#                  edgecolor='black', linewidth=0.5, alpha=0.7)
+        ax.add_geometries(_.land_gdf['geometry'], crs=_.data_crs, facecolor='none',
+                  edgecolor='black', linewidth=1, alpha=0.7)
+        ax.add_geometries(_.coastline_gdf['geometry'], crs=_.data_crs, facecolor='none',
+                 edgecolor='black', linewidth=0.5)
+        ax.add_geometries(_.countries_gdf['geometry'], crs=_.data_crs, facecolor='whitesmoke',
+                 edgecolor='black', linewidth=0.5, zorder = 10)
+        
+#         ax.add_geometries(self.coastline_gdf['geometry'], crs=data_crs, facecolor='honeydew',
+        return ax
