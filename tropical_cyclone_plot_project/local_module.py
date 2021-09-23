@@ -3,6 +3,7 @@ import geopandas
 import matplotlib.pyplot as plt
 from   matplotlib.pyplot import imread
 import matplotlib.patches as mpatches
+import matplotlib.ticker as mticker
 import numpy as np
 import cartopy.crs as ccrs
 import cartopy.feature as cfeat
@@ -64,29 +65,12 @@ class NhcDownloaderBot:
         _  = [2, 7, 13, 16]
         with ZipFile(f'nhc_latest/{file_names[2]}', 'r') as zip_file_name:
             for idx in range(4):
-                gdf_names[file_names[2]][idx]  = geopandas.read_file(
-                f'zip://./nhc_latest/{file_names[2]}!{zip_file_name.namelist()[_[idx]]}')
+                try:
+                    gdf_names[file_names[2]][idx]  = geopandas.read_file(
+                    f'zip://./nhc_latest/{file_names[2]}!{zip_file_name.namelist()[_[idx]]}')
+                except IndexError:
+                    gdf_names[file_names[2]][idx] = None
         return gdf_names
-
-    track_line_gdf        = 'none'
-    cone_gdf              = 'none'
-    points_gdf            = 'none'
-    init_radii_gdf        = 'none'
-    fcst_radii_gdf        = 'none'
-    best_track_points_gdf = 'none'
-    best_track_line_gdf   = 'none'
-    best_track_radii_gdf  = 'none'
-    best_track_swath_gdf  = 'none'
-    gtwo_areas_gdf        = 'none'
-    gtwo_lines_gdf        = 'none'
-    gtwo_points_gdf       = 'none'
-    wsp_34_gdf_points     = 'none'
-    wsp_50_gdf_points     = 'none'
-    wsp_64_gdf_points     = 'none'
-    wsp_34_gdf_polygons   = 'none'
-    wsp_50_gdf_polygons   = 'none'
-    wsp_64_gdf_polygons   = 'none'
-
     @classmethod
     def gdf_file(cls, storm_number, year):
         _ = NhcDownloaderBot(storm_number, year)
@@ -120,7 +104,7 @@ class MapTemplate:
         #self.municipios           = municipios        = geopandas.read_file(f'{ self.path }/División_Prov_Muni_y_Dist_MuniUTM.shp').to_crs("EPSG:4326")
         #self.limite_gdf           = limite_gdf        = geopandas.read_file(f'{ self.path }/limite_frontera.shp').to_crs("EPSG:4326")
         self.silueta_haiti_gdf    = silueta_haiti_gdf = geopandas.read_file(f'{ self.path }/silueta_haiti.shp').to_crs("EPSG:4326")
-        #self.silueta_rd_gdf       = silueta_rd_gdf    = geopandas.read_file(f'{ self.path }/silueta_rd.shp').to_crs("EPSG:4326")
+        self.silueta_rd_gdf       = silueta_rd_gdf    = geopandas.read_file(f'{ self.path }/silueta_rd.shp').to_crs("EPSG:4326")
         self.provincias_gdf       = provincias_gdf    = geopandas.read_file(f'{ self.path }/PROVINCIAS.shp').to_crs("EPSG:4326")
         #self.rios_gdf             = rios_gdf          = geopandas.read_file(f'{ self.path }/RIOS.shp').to_crs("EPSG:4326")
         #self.cuencas_hidro_gdf    = cuencas_hidro_gdf = geopandas.read_file(f'{ self.path }/Cuencas_Hidrograficas_RD.shp').to_crs("EPSG:4326")
@@ -145,7 +129,7 @@ class MapTemplate:
         gl.xlabels_bottom = False
         gl.xformatter = LONGITUDE_FORMATTER
         gl.yformatter = LATITUDE_FORMATTER
-        #gl.ylocator = mticker.FixedLocator([0, 10, 20, 30, 40, 50, 55])
+        gl.ylocator = mticker.FixedLocator([0, 10, 20, 30, 40, 50, 55])
         gl.xlabel_style = {'weight': 'bold'}
         gl.ylabel_style = {'weight': 'bold'}
         
@@ -155,7 +139,7 @@ class MapTemplate:
             if logo == 'ttlogo50x50':
                 y = y-5
             elif logo == 'onamet-150X43':
-                x, y = 40, 13
+                x, y = 45, 13
             logo = imread(f'../{logo}.png')
             fig.figimage(logo, x, y, zorder=100)
             x = x + 170
@@ -171,7 +155,7 @@ class MapTemplate:
         ytxt = -0.67
         text = 'www.onamet.gob.do'
         ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=12, verticalalignment='top',
-                weight = 'bold', color = 'black')
+                weight = 'bold', color = 'red')
         props = dict(facecolor='whitesmoke')
         xtxt = 0.0055
         ytxt = -0.01
@@ -202,28 +186,26 @@ class MapTemplate:
 #         ax.add_geometries(_.coastline_gdf['geometry'], crs=_.data_crs, facecolor='none',
 #                              edgecolor='black', linewidth=0.5)
         ax.add_geometries(_.countries_gdf['geometry'], crs=_.data_crs, facecolor='whitesmoke',
-                             edgecolor='black', linewidth=0.5, zorder = 10, alpha = 0.5)
+                             edgecolor='black', linewidth=0.5, zorder = 10, alpha = 0.7)
         return ax
     
     
 class NhcRssParser:
-    def __initi__(self):
-        pass
-    url = 'https://www.nhc.noaa.gov/index-at.xml'
-    f   =  feedparser.parse(url)
-    df  =  pandas.DataFrame(f.entries).drop(columns=['title_detail', 'summary', 'summary_detail', 'published_parsed', 'links', 'link', 'id', 
-                           'guidislink', 'authors', 'author', 'author_detail'])
-    @staticmethod
-    def tc_list():
-        return [nhc_atcf for nhc_atcf in df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False]  
+    def __init__(self, url):    
+        self.url   = url 
+        self.f     = f   =  feedparser.parse(self.url)
+        self.df    = df  =  pandas.DataFrame(self.f.entries).drop(columns=['title_detail', 'summary', 'summary_detail', 'published_parsed', 'links', 'link', 'id', 
+                               'guidislink', 'authors', 'author', 'author_detail'])
+    
+    def tc_list(self):
+        return [nhc_atcf for nhc_atcf in self.df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False]  
     #{key: value for (key, value) in iterable}
-    @staticmethod
-    def tc_dict():
+    def tc_dict(self):
         return {nhc_atcf: [nhc_name    , nhc_type, nhc_center, nhc_movement, 
                         nhc_pressure, nhc_wind, published , nhc_datetime]         
              for (nhc_name    , nhc_atcf, nhc_type  , nhc_center  , nhc_movement,
                   nhc_pressure, nhc_wind, published , nhc_datetime) 
-             in  zip(df['nhc_name']    , df['nhc_atcf']    , df['nhc_type'], df['nhc_center'], 
-                     df['nhc_movement'], df['nhc_pressure'], df['nhc_wind'], df['published'],
-                     df['nhc_datetime']) 
+             in  zip(self.df['nhc_name']    , self.df['nhc_atcf']    , self.df['nhc_type'], self.df['nhc_center'], 
+                     self.df['nhc_movement'], self.df['nhc_pressure'], self.df['nhc_wind'], self.df['published'],
+                     self.df['nhc_datetime']) 
              if pandas.isnull(nhc_name) == False}
