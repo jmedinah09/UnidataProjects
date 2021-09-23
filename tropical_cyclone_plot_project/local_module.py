@@ -12,6 +12,7 @@ from   shapely.geometry import Point, LineString, Polygon, MultiPoint
 import requests
 from   zipfile import ZipFile
 import datetime 
+import feedparser
 
 
 class NhcDownloaderBot:
@@ -114,7 +115,7 @@ class NhcDownloaderBot:
 class MapTemplate:
     def __init__(self, extent     = [-72, -68, 17.5, 20]):
         self.extent               = extent
-        self.path                 = path              = '../shape_files/rd_shapes/vectores'
+        self.path                 = path               = '../shape_files/rd_shapes/vectores'
         #self.hispaniola_gdf       = hispaniola_gdf    = geopandas.read_file(f'{ self.path }/hispaniola.shp').to_crs("EPSG:4326")
         #self.municipios           = municipios        = geopandas.read_file(f'{ self.path }/División_Prov_Muni_y_Dist_MuniUTM.shp').to_crs("EPSG:4326")
         #self.limite_gdf           = limite_gdf        = geopandas.read_file(f'{ self.path }/limite_frontera.shp').to_crs("EPSG:4326")
@@ -139,9 +140,45 @@ class MapTemplate:
 
         ax.add_feature(cfeat.OCEAN.with_scale('10m'))
 
-        grid_lines = ax.gridlines(draw_labels=True)
-        grid_lines.xformatter = LONGITUDE_FORMATTER
-        grid_lines.yformatter = LATITUDE_FORMATTER
+        gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                          linewidth=0.5, color='black', linestyle='--')
+        gl.xlabels_bottom = False
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+        #gl.ylocator = mticker.FixedLocator([0, 10, 20, 30, 40, 50, 55])
+        gl.xlabel_style = {'weight': 'bold'}
+        gl.ylabel_style = {'weight': 'bold'}
+        
+        logos = ['iglogo40x40', 'fblogo40x40', 'ttlogo50x50', 'onamet-150X43']
+        x, y = 652, 13
+        for logo in logos: 
+            if logo == 'ttlogo50x50':
+                y = y-5
+            elif logo == 'onamet-150X43':
+                x, y = 40, 13
+            logo = imread(f'../{logo}.png')
+            fig.figimage(logo, x, y, zorder=100)
+            x = x + 170
+        
+        props = dict(boxstyle='round', facecolor='white', alpha=1)
+        xtxt = [0.546, 0.549, 0.552, 0.555]
+        ytxt = -0.64
+        text = '       @onamet            @onamet             @onamet'
+        for x in xtxt:
+            ax.text(x, ytxt, text, transform=ax.transAxes, fontsize=18, verticalalignment='top', bbox=props, 
+                weight = 'bold', color = 'blue')
+        xtxt = 0.04
+        ytxt = -0.67
+        text = 'www.onamet.gob.do'
+        ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=12, verticalalignment='top',
+                weight = 'bold', color = 'black')
+        props = dict(facecolor='whitesmoke')
+        xtxt = 0.0055
+        ytxt = -0.01
+        a = 239*'.'
+        text = f'''{a}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{a}'''
+        ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=12, verticalalignment='top',
+                weight = 'bold', color = 'b', bbox=props, zorder = -1)
         return ax
         
     @classmethod    
@@ -149,33 +186,44 @@ class MapTemplate:
         _  = MapTemplate()
         ax = _.base_map()
         ax.set_extent([-72, -68, 17.5, 20])
-#         ax.add_geometries(_.hispaniola_gdf['geometry'], crs=cls.data_crs, facecolor='none',
-#                  edgecolor='black', linewidth=0.5, alpha=0.7)
-#         ax.add_geometries(_.limite_gdf['geometry'], crs=cls.data_crs, facecolor='none',
-#                   edgecolor='black', linewidth=1, alpha=0.7)
         ax.add_geometries(_.silueta_haiti_gdf['geometry'], crs=cls.data_crs, facecolor='none',
                  edgecolor='black', linewidth=0.5)
-#         ax.add_geometries(_.silueta_rd_gdf['geometry'], crs=cls.data_crs, facecolor='none',
-#                  edgecolor='black', linewidth=0.5, zorder = 10)
         ax.add_geometries(_.provincias_gdf['geometry'], crs=cls.data_crs, facecolor='honeydew',
                  edgecolor='black', linewidth=0.5)
         return ax
-        
     @classmethod     
     def wide_map(cls):
-        
         _  = MapTemplate()
         ax = _.base_map()
         ax.set_extent([-100, 0, 0, 40])
-
-#         ax.add_geometries(self.states_provinces_gdf['geometry'], crs=data_crs, facecolor='none',
-#                  edgecolor='black', linewidth=0.5, alpha=0.7)
-        ax.add_geometries(_.land_gdf['geometry'], crs=_.data_crs, facecolor='none',
-                  edgecolor='black', linewidth=1, alpha=0.7)
-        ax.add_geometries(_.coastline_gdf['geometry'], crs=_.data_crs, facecolor='none',
-                 edgecolor='black', linewidth=0.5)
+        ax.stock_img()
+#         ax.add_geometries(_.land_gdf['geometry'], crs=_.data_crs, facecolor='none',
+#                               edgecolor='black', linewidth=1, alpha=0.7)
+#         ax.add_geometries(_.coastline_gdf['geometry'], crs=_.data_crs, facecolor='none',
+#                              edgecolor='black', linewidth=0.5)
         ax.add_geometries(_.countries_gdf['geometry'], crs=_.data_crs, facecolor='whitesmoke',
-                 edgecolor='black', linewidth=0.5, zorder = 10)
-        
-#         ax.add_geometries(self.coastline_gdf['geometry'], crs=data_crs, facecolor='honeydew',
+                             edgecolor='black', linewidth=0.5, zorder = 10, alpha = 0.5)
         return ax
+    
+    
+class NhcRssParser:
+    def __initi__(self):
+        pass
+    url = 'https://www.nhc.noaa.gov/index-at.xml'
+    f   =  feedparser.parse(url)
+    df  =  pandas.DataFrame(f.entries).drop(columns=['title_detail', 'summary', 'summary_detail', 'published_parsed', 'links', 'link', 'id', 
+                           'guidislink', 'authors', 'author', 'author_detail'])
+    @staticmethod
+    def tc_list():
+        return [nhc_atcf for nhc_atcf in df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False]  
+    #{key: value for (key, value) in iterable}
+    @staticmethod
+    def tc_dict():
+        return {nhc_atcf: [nhc_name    , nhc_type, nhc_center, nhc_movement, 
+                        nhc_pressure, nhc_wind, published , nhc_datetime]         
+             for (nhc_name    , nhc_atcf, nhc_type  , nhc_center  , nhc_movement,
+                  nhc_pressure, nhc_wind, published , nhc_datetime) 
+             in  zip(df['nhc_name']    , df['nhc_atcf']    , df['nhc_type'], df['nhc_center'], 
+                     df['nhc_movement'], df['nhc_pressure'], df['nhc_wind'], df['published'],
+                     df['nhc_datetime']) 
+             if pandas.isnull(nhc_name) == False}
