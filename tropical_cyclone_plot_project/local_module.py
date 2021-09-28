@@ -163,22 +163,22 @@ class MapTemplate:
         text = f'''{a}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n{a}'''
         ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=12, verticalalignment='top',
                 weight = 'bold', color = 'b', bbox=props, zorder = -1)
-        return ax
+        return fig, ax
         
     @classmethod    
     def zoomed_map(cls):
         _  = MapTemplate()
-        ax = _.base_map()
+        fig, ax = _.base_map()
         ax.set_extent([-72, -68, 17.5, 20])
         ax.add_geometries(_.silueta_haiti_gdf['geometry'], crs=cls.data_crs, facecolor='none',
                  edgecolor='black', linewidth=0.5)
         ax.add_geometries(_.provincias_gdf['geometry'], crs=cls.data_crs, facecolor='honeydew',
                  edgecolor='black', linewidth=0.5)
-        return ax
+        return fig, ax
     @classmethod     
     def wide_map(cls):
         _  = MapTemplate()
-        ax = _.base_map()
+        fig, ax = _.base_map()
         ax.set_extent([-100, 0, 0, 40])
         ax.stock_img()
 #         ax.add_geometries(_.land_gdf['geometry'], crs=_.data_crs, facecolor='none',
@@ -187,7 +187,7 @@ class MapTemplate:
 #                              edgecolor='black', linewidth=0.5)
         ax.add_geometries(_.countries_gdf['geometry'], crs=_.data_crs, facecolor='whitesmoke',
                              edgecolor='black', linewidth=0.5, zorder = 10, alpha = 0.7)
-        return ax
+        return fig, ax
     
     
 class NhcRssParser:
@@ -197,10 +197,8 @@ class NhcRssParser:
         self.df    = df  =  pandas.DataFrame(self.f.entries).drop(columns=['title_detail', 'summary', 'summary_detail', 'published_parsed', 'links', 'link', 'id', 
                                'guidislink', 'authors', 'author', 'author_detail'])
     
-    def tc_list(self):
-        return [nhc_atcf for nhc_atcf in self.df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False]  
     #{key: value for (key, value) in iterable}
-    def tc_dict(self):
+    def tc_dict_list(self):
         return {nhc_atcf: [nhc_name    , nhc_type, nhc_center, nhc_movement, 
                         nhc_pressure, nhc_wind, published , nhc_datetime]         
              for (nhc_name    , nhc_atcf, nhc_type  , nhc_center  , nhc_movement,
@@ -208,4 +206,4 @@ class NhcRssParser:
              in  zip(self.df['nhc_name']    , self.df['nhc_atcf']    , self.df['nhc_type'], self.df['nhc_center'], 
                      self.df['nhc_movement'], self.df['nhc_pressure'], self.df['nhc_wind'], self.df['published'],
                      self.df['nhc_datetime']) 
-             if pandas.isnull(nhc_name) == False}
+             if pandas.isnull(nhc_name) == False}, [nhc_atcf for nhc_atcf in self.df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False]  
