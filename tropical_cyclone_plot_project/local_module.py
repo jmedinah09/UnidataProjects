@@ -196,17 +196,42 @@ class NhcRssParser:
         self.f     = f   =  feedparser.parse(self.url)
         self.df    = df  =  pandas.DataFrame(self.f.entries).drop(columns=['title_detail', 'summary', 'summary_detail', 'published_parsed', 'links', 'link', 'id', 
                                'guidislink', 'authors', 'author', 'author_detail'])
+        self.tcdictgral  = tcdictgral = {
+                     'nhc_name':    [],
+                     'nhc_type':    [['tropical depresion', 'tropical storm', 'hurricane', 'major hurricane', 'remanents'],
+                                     ['DT'                , 'TT'            , 'huracan'  , 'HM'             , 'remanentes']], 
+                     'nhc_center':  [], 
+                     'nhc_movement':['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'], 
+                     'nhc_pressure':[], 
+                     'nhc_wind':    [], 
+                     'published':   [], 
+                     'nhc_datetime':[]
+                     }
     
     #{key: value for (key, value) in iterable}
     def tc_dict_list(self):
-        return {nhc_atcf: [nhc_name    , nhc_type, nhc_center, nhc_movement, 
+        tclist = [nhc_atcf for nhc_atcf in self.df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False] 
+        tcdict = {nhc_atcf: [nhc_name    , nhc_type, nhc_center, nhc_movement, 
                         nhc_pressure, nhc_wind, published , nhc_datetime]         
              for (nhc_name    , nhc_atcf, nhc_type  , nhc_center  , nhc_movement,
                   nhc_pressure, nhc_wind, published , nhc_datetime) 
              in  zip(self.df['nhc_name']    , self.df['nhc_atcf']    , self.df['nhc_type'], self.df['nhc_center'], 
                      self.df['nhc_movement'], self.df['nhc_pressure'], self.df['nhc_wind'], self.df['published'],
                      self.df['nhc_datetime']) 
-             if pandas.isnull(nhc_name) == False}, [nhc_atcf for nhc_atcf in self.df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False]
+             if pandas.isnull(nhc_name) == False}
+        for key in tcdict.keys():
+            tcdict[key][1] = self.tcdictgral['nhc_type'][1][self.tcdictgral['nhc_type'][0].index(tcdict[key][1].casefold())]
+            tcdict[key][0] = tcdict[key][0].upper()
+            tcdict[key][3] = tcdict[key][3].replace('W', 'O')
+            try:
+                lat  = float(tcdict[key][2][:4])
+                lon  = float(tcdict[key][2][6:])
+            except ValueError:
+                lat  = float(tcdict[key][2][:3])
+                lon  = float(tcdict[key][2][5:])
+            tcdict[key][2] = [lat, lon]
+         
+        return tcdict, tclist
     
     
     
