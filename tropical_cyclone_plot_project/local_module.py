@@ -125,7 +125,7 @@ class MapTemplate:
         ax.add_feature(cfeat.OCEAN.with_scale('10m'))
 
         gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
-                          linewidth=0.5, color='black', linestyle='--')
+                          linewidth=0.5, color='black', linestyle='--', zorder = 10000)
         gl.xlabels_bottom = False
         gl.xformatter = LONGITUDE_FORMATTER
         gl.yformatter = LATITUDE_FORMATTER
@@ -198,8 +198,8 @@ class NhcRssParser:
                                'guidislink', 'authors', 'author', 'author_detail'])
         self.tcdictgral  = tcdictgral = {
                      'nhc_name':    [],
-                     'nhc_type':    [['tropical depresion', 'tropical storm', 'hurricane', 'major hurricane', 'remanents'],
-                                     ['DT'                , 'TT'            , 'huracan'  , 'HM'             , 'remanentes']], 
+                     'nhc_type':    [['tropical depression', 'tropical storm', 'hurricane', 'major hurricane', 'remanents'],
+                                     ['la DT'             , 'la TT'         , 'el huracan', 'el HM'         , 'los remanentes']], 
                      'nhc_center':  [], 
                      'nhc_movement':['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'], 
                      'nhc_pressure':[], 
@@ -223,6 +223,7 @@ class NhcRssParser:
             tcdict[key][1] = self.tcdictgral['nhc_type'][1][self.tcdictgral['nhc_type'][0].index(tcdict[key][1].casefold())]
             tcdict[key][0] = tcdict[key][0].upper()
             tcdict[key][3] = tcdict[key][3].replace('W', 'O')
+            tcdict[key][3] = tcdict[key][3].replace('t', '')
             try:
                 lat  = float(tcdict[key][2][:4])
                 lon  = float(tcdict[key][2][6:])
