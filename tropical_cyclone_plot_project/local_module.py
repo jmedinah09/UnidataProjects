@@ -1,9 +1,12 @@
 import pandas
 import geopandas 
+from   pyproj import CRS
 import matplotlib.pyplot as plt
 from   matplotlib.pyplot import imread
 import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
 import matplotlib.ticker as mticker
+import matplotlib.patheffects as path_effects
 import numpy as np
 import cartopy.crs as ccrs
 import cartopy.feature as cfeat
@@ -14,7 +17,7 @@ import requests
 from   zipfile import ZipFile
 import datetime 
 import feedparser
-
+import math
 
 class NhcDownloaderBot:
     def __init__(self, storm_number = 1, year = 2020):
@@ -210,6 +213,7 @@ class NhcRssParser:
     
     #{key: value for (key, value) in iterable}
     def tc_dict_list(self):
+        map_template = MapTemplate()
         tclist = [nhc_atcf for nhc_atcf in self.df['nhc_atcf'] if pandas.isnull(nhc_atcf) == False] 
         tcdict = {nhc_atcf: [nhc_name    , nhc_type, nhc_center, nhc_movement, 
                         nhc_pressure, nhc_wind, published , nhc_datetime]         
@@ -234,10 +238,139 @@ class NhcRssParser:
          
         return tcdict, tclist
     
+def feature_distance(lat, lon, ax):
+    map_template = MapTemplate()
+    #rd_centroid     = map_template.silueta_rd_gdf['geometry'].centroid[0]  
+    rd_centroid_lat, rd_centroid_lon = 18.896390885568632, -70.49469853956771
+    aeqd = CRS(proj ='aeqd', ellps='WGS84', datum='WGS84', lat_0=rd_centroid_lat, lon_0=rd_centroid_lon).srs
+    rd_centroid_gdf = geopandas.GeoDataFrame([1], geometry=[Point(rd_centroid_lon, rd_centroid_lat)], crs={'init': 'epsg:4326'})
+    position_gdf    = geopandas.GeoDataFrame([1], geometry=[Point(lon, lat)], crs={'init': 'epsg:4326'})
     
+    rd_centroid_gdf  = rd_centroid_gdf.to_crs(crs=aeqd)
+    position_gdf     = position_gdf.to_crs(crs=aeqd)
     
+    mean_lat = (rd_centroid_lat +  lat)/2
+    mean_lon = (rd_centroid_lon + lon)/2
     
+    distance = int(round((rd_centroid_gdf.distance(position_gdf))/1000, -1)[0])
     
+#     ax.plot([rd_centroid_lon, lon], [rd_centroid_lat, lat], color='k', linewidth=0.5, 
+#             transform=ccrs.Geodetic(), zorder = 100)
+    ax.plot([rd_centroid_lon, lon], [rd_centroid_lat, lat], color='b', linewidth=0.5, 
+            transform=map_template.data_crs, zorder = 1000)
+    props = dict(boxstyle='round', facecolor='white')
+    ax.text(mean_lon, mean_lat, f'{distance} km', transform=map_template.data_crs, fontsize=9,verticalalignment='center', 
+            horizontalalignment = 'center', weight = 'bold', color = 'b', bbox=props, zorder = 10000)
+    return ax, distance
+def tc_legend(ax):
+    #https://matplotlib.org/2.0.2/api/pyplot_api.html#matplotlib.pyplot.legend
+    low_prob = mlines.Line2D([], [], linestyle = 'none', color='yellow', marker='X', markersize=20, markeredgecolor = 'k')
+    med_prob = mlines.Line2D([], [], linestyle = 'none', color='orange', marker='X', markersize=20, markeredgecolor = 'k')
+    hig_prob = mlines.Line2D([], [], linestyle = 'none', color='red'   , marker='X', markersize=20, markeredgecolor = 'k')
+
+    TD  = mlines.Line2D([], [], linestyle = 'none', color='red'   , marker='.', markersize=25)
+    TS  = mlines.Line2D([], [], linestyle = 'none', color='red'   , marker='.', markersize=25)
+    HU  = mlines.Line2D([], [], linestyle = 'none', color='red'   , marker='.', markersize=25)
+    PTC = mlines.Line2D([], [], linestyle = 'none', color='red'   , marker='.', markersize=25)
+    
+    _   = mlines.Line2D([], [], linestyle = '-', color = 'b', linewidth=0.5)
+    __  = mlines.Line2D([], [], linestyle = '-', color = 'b', linewidth=0.5)
+
+    legend   = [_, low_prob, med_prob, hig_prob, __, TD, TS, HU, PTC]
+    labels   = [
+                'Prob. de formacion (48 h):',
+                'Baja (>40%)', 'Media (40-60%)', 'Alta (<60%)',
+                'Clasificacion:',
+                'Depresion Tropical (DT)', 'Tormenta Tropical (TT)', 'Huracan (H)',
+                'Remanentes'
+               ]
+    ax.legend(legend, labels,  loc='lower left', bbox_to_anchor=(-0.003, -0.62), fancybox=True, 
+              fontsize = 18, ncol = 1, shadow = True, handletextpad = 0, labelspacing=1.1 )
+    return ax
+
+def fecha_hora(ax):
+    current_year  = datetime.date.today().year
+    current_month = datetime.date.today().month
+    current_day   = datetime.date.today().day
+    current_hour  = datetime.datetime.now().hour
+    current_time  = datetime.datetime.today().strftime("%H:%M %p")
+    current_datetime = datetime.datetime(current_year, current_month, current_day, 12)
+
+    Dias_de_la_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    tday = current_datetime.weekday()
+    Dia_de_la_semana = Dias_de_la_semana[tday]
+    Meses_del_Ano = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre',
+                         'Octubre', 'Noviembre', 'Diciembre']
+    Mes_del_Ano = Meses_del_Ano[current_month]
+
+    fecha_y_hora = f'{Dia_de_la_semana} {current_day} de {Mes_del_Ano} de {current_year} - {current_time}'
+    
+    props = dict(facecolor='white', path_effects=[path_effects.withSimplePatchShadow(offset=(5,-5), alpha=1)])
+    xtxt = 0.2
+    ytxt = 0.99
+    text = f'''Vigilancia De Ciclones Tropicales Para La Republica Dominicana\n              {fecha_y_hora}'''
+    return ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=20, verticalalignment='top', bbox=props, 
+                   weight = 'bold', color = 'black', zorder = 10002)
+def calcBearing(lat, lon):
+    '''https://stackoverflow.com/questions/47659249/calculate-cardinal-direction-from-gps-coordinates-in-python'''
+#     import pyproj
+#     geodesic = pyproj.Geod(ellps='WGS84')rd_centroid_lat, rd_centroid_lon = 18.896390885568632, -70.49469853956771
+#     fwd_azimuth,back_azimuth,distance = geodesic.inv(rd_centroid_lon, rd_centroid_lat, lon, lat)dLon = (lon - rd_centroid_lon)
+    rd_centroid_lat, rd_centroid_lon = 18.896390885568632, -70.49469853956771
+    dLon = (lon - rd_centroid_lon)
+    x = math.cos(math.radians(lat)) * math.sin(math.radians(dLon))
+    y = math.cos(math.radians(rd_centroid_lat)) * math.sin(math.radians(lat)) - math.sin(math.radians(rd_centroid_lat)) * math.cos(math.radians(lat)) * math.cos(math.radians(dLon))
+    bearing = math.atan2(x,y)   # use atan2 to determine the quadrant
+    bearing = math.degrees(bearing) #converts from radian to degrees
+    #bearing2= bearing
+    #points = ['north', 'north east', 'east', 'south east', 'south', 'south west', 'west', 'north west']
+#     points = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO','SO', 'OSO', 'O', 'ONO', 'NO', 'NNO']
+#     bearing += 11.25 #for 8 cardinal points use 22.5
+#     bearing = bearing % 360
+#     bearing = int(bearing / 22.5) # values 0 to 16 - for 8 cardinal points use 45
+#     bearing = points [bearing]
+    if bearing >= 0:
+        if    0 <= bearing < 5:
+            bearing = 'N'
+        elif 5 <= bearing < 30:
+            bearing = 'NNE'
+        elif 30 <= bearing < 60:
+            bearing ='NE'
+        elif 60 <= bearing < 85:
+            bearing ='ENE'
+        elif 85 <= bearing < 95:
+            bearing ='E'
+        elif 95 <= bearing < 130:
+            bearing ='ESE'
+        elif 130 <= bearing < 140:
+            bearing ='SE'
+        elif 140 <= bearing < 175:
+            bearing ='SSE'
+        elif 175 <= bearing <= 180:
+            bearing ='S'
+    elif bearing < 0:
+        bearing = 360 + bearing 
+        if 180 <= bearing < 185:
+            bearing ='S'
+        elif 185 <= bearing < 215:
+            bearing = 'SSO'
+        elif 215 <= bearing < 235:
+            bearing = 'SO'
+        elif 235 <= bearing < 260:
+            bearing = 'OSO'
+        elif 265 <= bearing < 275:
+            bearing = '0'
+        elif 275 <= bearing < 300:
+            bearing = '0NO'
+        elif 300 <= bearing < 325:
+            bearing = 'NO'
+        elif 325 <= bearing < 355:
+            bearing = 'NNO'
+        elif 355 <= bearing <= 360:
+            bearing = 'N'
+    return bearing   
+   
+ 
     
 '''
 align_string.py
@@ -329,6 +462,7 @@ def align_paragraph(paragraph, width, debug=0):
     #wrapped = 'textwrap & align_string:\n%s\n' % '\n'.join(wrapped
 
     return '\n'.join(wrapped)
+
 
 '''
     =====================
