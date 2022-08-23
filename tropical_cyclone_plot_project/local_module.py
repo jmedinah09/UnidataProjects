@@ -19,6 +19,54 @@ import datetime
 import feedparser
 import math
 
+
+class NhcDownloaderBotNEW:
+    def __init__(self, storm_number = 1, year = 2020):
+        self.file_names   = file_names = [
+                                            f'al{storm_number}{year}_5day_latest.zip',
+                                            f'al{storm_number}{year}_fcst_latest.zip',
+                                            f'al{storm_number}{year}_best_track.zip',
+                                            f'gtwo_shapefiles.zip',
+                                            f'wsp_120hrhalfDeg_latest.zip',
+                                            f'wsp_120hr5km_latest.zip'
+                                         ]
+        self.urls         = urls       = [
+                                            f'https://www.nhc.noaa.gov/gis/forecast/archive',
+                                            f'https://www.nhc.noaa.gov/gis/forecast/archive',
+                                            f'https://www.nhc.noaa.gov/gis/best_track',
+                                            f'https://www.nhc.noaa.gov/xgtwo',
+                                            f'https://www.nhc.noaa.gov/gis/forecast/archive',
+                                            f'https://www.nhc.noaa.gov/gis/forecast/archive'
+                                         ]
+        self.gdf_names   =  gdf_names  = {
+                                            file_names[0] : ['track_line_gdf', 'cone_gdf', 'points_gdf'],
+                                            file_names[1] : ['init_radii_gdf', 'fcst_radii_gdf'],
+                                            file_names[2] : ['best_track_points_gdf', 'best_track_line_gdf', 'best_track_radii_gdf', 'best_track_swath_gdf'],
+                                            file_names[3] : ['gtwo_areas_gdf', 'gtwo_lines_gdf', 'gtwo_points_gdf'],
+                                            file_names[4] : ['wsp_34_gdf_points', 'wsp_50_gdf_points', 'wsp_64_gdf_points'],
+                                            file_names[5] : ['wsp_34_gdf_polygons', 'wsp_50_gdf_polygons', 'wsp_64_gdf_polygons']
+                                          }
+
+    def gtw_gdf(self): 
+        r = requests.get(f'{self.urls[3]}/{self.file_names[3]}')
+        # open method to open a file on your system and write the contents
+        with open(f'nhc_latest/{self.file_names[3]}', 'wb') as code:
+            code.write(r.content)
+        with ZipFile(f'nhc_latest/{self.file_names[3]}', 'r') as gtwo_zip:
+            #print(gtwo_zip.namelist())
+            gtwo_areas = gtwo_zip.namelist()[2]
+            gtwo_lines = gtwo_zip.namelist()[7]
+            gtwo_points = gtwo_zip.namelist()[12]
+        gtwo_areas_gdf  = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[3]}!{gtwo_areas}')
+        gtwo_lines_gdf  = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[3]}!{gtwo_lines}')
+        gtwo_points_gdf = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[3]}!{gtwo_points}')
+        return gtwo_areas_gdf, gtwo_lines_gdf, gtwo_points_gdf
+
+
+
+
+
+
 class NhcDownloaderBot:
     def __init__(self, storm_number = 1, year = 2020):
         self.file_names   = file_names = [
@@ -136,14 +184,19 @@ class MapTemplate:
         gl.xlabel_style = {'weight': 'bold'}
         gl.ylabel_style = {'weight': 'bold'}
         
-        logos = ['iglogo40x40', 'fblogo40x40', 'ttlogo50x50', 'onamet-150X43']
+        iglogo = '../static/iglogo40x40'
+        fblogo = '../static/fblogo40x40'
+        ttlogo = '../static/ttlogo50x50'
+        otlogo = '../static/onamet-150X43'
+        
+        logos = [iglogo, fblogo, ttlogo, otlogo]
         x, y = 652, 13
         for logo in logos: 
-            if logo == 'ttlogo50x50':
+            if logo == ttlogo:
                 y = y-5
-            elif logo == 'onamet-150X43':
+            elif logo == otlogo:
                 x, y = 45, 13
-            logo = imread(f'../{logo}.png')
+            logo = imread(f'{logo}.png')
             fig.figimage(logo, x, y, zorder=100)
             x = x + 170
         
@@ -197,19 +250,25 @@ class NhcRssParser:
     def __init__(self, url):    
         self.url   = url 
         self.f     = f   =  feedparser.parse(self.url)
-        self.df    = df  =  pandas.DataFrame(self.f.entries).drop(columns=['title_detail', 'summary', 'summary_detail', 'published_parsed', 'links', 'link', 'id', 
-                               'guidislink', 'authors', 'author', 'author_detail'])
+        self.df    = df  =  pandas.DataFrame(self.f.entries).drop(columns=['title_detail', 'summary', 'summary_detail', 'published_parsed', 'links',                                                                                'link', 'id', 'guidislink', 'authors', 'author', 'author_detail'])
         self.tcdictgral  = tcdictgral = {
-                     'nhc_name':    [],
-                     'nhc_type':    [['tropical depression', 'tropical storm', 'hurricane', 'major hurricane', 'remanents'],
-                                     ['la DT'             , 'la TT'         , 'el huracan', 'el HM'         , 'los remanentes']], 
-                     'nhc_center':  [], 
-                     'nhc_movement':['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'], 
-                     'nhc_pressure':[], 
-                     'nhc_wind':    [], 
-                     'published':   [], 
-                     'nhc_datetime':[]
-                     }
+                                            'nhc_name':    [],
+                                            'nhc_type':    [['tropical depression', 'tropical storm', 'hurricane', 'major hurricane', 'remnants', 'potential tropical cyclone'],
+                                                            ['la DT' , 'la TT' , 'el huracan', 'el HM', 'los remanentes', 'el PCT']], 
+                                            'nhc_center':  [], 
+                                            'nhc_movement':['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW',                                                                   'NNW'], 
+                                            'nhc_pressure':[], 
+                                            'nhc_wind':    [], 
+                                            'published':   [], 
+                                            'nhc_datetime':[]
+                                         }
+        self.numbers_in_english = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN',
+                                  'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN',
+                                  'TWENTY']
+        self.numbers_in_spanish = ['#UNO', '#DOS', '#TRES', '#CUATRO', '#CINCO', '#SEIS', '#SIETE', '#OCHO', '#NUEVE', '#DIEZ', '#ONCE',
+                                  '#DOCE', '#TRECE', '#CATORCE', '#QUINCE', '#DIECISEIS', '#DIECISIETE', '#DIECIOCHO', '#DIECINUEVE',
+                                  '#VEINTE']
+                                      
     
     #{key: value for (key, value) in iterable}
     def tc_dict_list(self):
@@ -228,6 +287,8 @@ class NhcRssParser:
             tcdict[key][0] = tcdict[key][0].upper()
             tcdict[key][3] = tcdict[key][3].replace('W', 'O')
             tcdict[key][3] = tcdict[key][3].replace('t', '')
+            if tcdict[key][0] in self.numbers_in_english:
+                tcdict[key][0] = self.numbers_in_spanish[self.numbers_in_english.index(tcdict[key][0])] 
             try:
                 lat  = float(tcdict[key][2][:4])
                 lon  = float(tcdict[key][2][6:])
@@ -306,9 +367,9 @@ def fecha_hora(ax):
     fecha_y_hora = f'{Dia_de_la_semana} {current_day} de {Mes_del_Ano} de {current_year} - {current_time}'
     
     props = dict(facecolor='white', path_effects=[path_effects.withSimplePatchShadow(offset=(5,-5), alpha=1)])
-    xtxt = 0.2
+    xtxt = 0.1 #0.2
     ytxt = 0.99
-    text = f'''Vigilancia De Ciclones Tropicales Para La Republica Dominicana\n              {fecha_y_hora}'''
+    text = f'''EXPERIMENTAL - Vigilancia De Ciclones Tropicales Para La Republica Dominicana\n              {fecha_y_hora} - NO OFICIAL'''
     return ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=20, verticalalignment='top', bbox=props, 
                    weight = 'bold', color = 'black', zorder = 10002)
 def calcBearing(lat, lon):
