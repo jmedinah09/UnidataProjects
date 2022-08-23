@@ -5,7 +5,8 @@
  #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
 
 echo "*****Changing to the working directory*****"
-cd /home/"$USER"/Desktop/PythonStuffs/clone_repo
+# cd /home/"$USER"/Desktop/PythonStuffs/clone_repo
+cd /mnt/c/Users/Carla/Desktop/Jose/UnidataProjects
 git init
 git status
 echo "*****Adding*****"
