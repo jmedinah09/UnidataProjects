@@ -21,7 +21,7 @@ import math
 
 
 class NhcDownloaderBotNEW:
-    def __init__(self, storm_number = 1, year = 2020):
+    def __init__(self, storm_number = '07', year = 2022):
         self.file_names   = file_names = [
                                             f'al{storm_number}{year}_5day_latest.zip',
                                             f'al{storm_number}{year}_fcst_latest.zip',
@@ -61,12 +61,34 @@ class NhcDownloaderBotNEW:
         gtwo_lines_gdf  = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[3]}!{gtwo_lines}')
         gtwo_points_gdf = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[3]}!{gtwo_points}')
         return gtwo_areas_gdf, gtwo_lines_gdf, gtwo_points_gdf
-
-
-
-
-
-
+    def cone_gdf(self): 
+        # print(f'nhc_latest/{self.file_names[0]}')
+        r = requests.get(f'{self.urls[0]}/{self.file_names[0]}')
+        # open method to open a file on your system and write the contents
+        with open(f'nhc_latest/{self.file_names[0]}', 'wb') as code:
+            code.write(r.content)
+        with ZipFile(f'nhc_latest/{self.file_names[0]}', 'r') as cone_zip:
+            #print(gtwo_zip.namelist())
+            cone_areas = cone_zip.namelist()[2]
+            cone_lines = cone_zip.namelist()[7]
+            cone_points = cone_zip.namelist()[12]
+        cone_gdf          = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[0]}!{cone_areas}')
+        track_lines_gdf   = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[0]}!{cone_lines}')
+        points_points_gdf = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[0]}!{cone_points}')
+        return cone_gdf, track_lines_gdf, points_points_gdf
+    def radii_gdf(self): 
+        r = requests.get(f'{self.urls[1]}/{self.file_names[1]}')
+        # open method to open a file on your system and write the contents
+        with open(f'nhc_latest/{self.file_names[1]}', 'wb') as code:
+            code.write(r.content)
+        with ZipFile(f'nhc_latest/{self.file_names[1]}', 'r') as zip_file:
+            # print(gtwo_zip.namelist())            
+            fcst_radii = zip_file.namelist()[0]
+            init_radii = zip_file.namelist()[5]
+        fcst_radii_gdf  = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[3]}!{fcst_radii}')
+        init_radii_gdf  = geopandas.read_file(f'zip://./nhc_latest/{self.file_names[3]}!{init_radii}')
+        return fcst_radii_gdf, init_radii_gdf
+    
 class NhcDownloaderBot:
     def __init__(self, storm_number = 1, year = 2020):
         self.file_names   = file_names = [
@@ -184,34 +206,49 @@ class MapTemplate:
         gl.xlabel_style = {'weight': 'bold'}
         gl.ylabel_style = {'weight': 'bold'}
         
-        iglogo = '../static/iglogo40x40'
-        fblogo = '../static/fblogo40x40'
-        ttlogo = '../static/ttlogo50x50'
-        otlogo = '../static/onamet-150X43'
-        
-        logos = [iglogo, fblogo, ttlogo, otlogo]
-        x, y = 652, 13
-        for logo in logos: 
-            if logo == ttlogo:
-                y = y-5
-            elif logo == otlogo:
-                x, y = 45, 13
-            logo = imread(f'{logo}.png')
-            fig.figimage(logo, x, y, zorder=100)
-            x = x + 170
-        
-        props = dict(boxstyle='round', facecolor='white', alpha=1)
-        xtxt = [0.546, 0.549, 0.552, 0.555]
-        ytxt = -0.64
-        text = '       @onamet            @onamet             @onamet'
-        for x in xtxt:
-            ax.text(x, ytxt, text, transform=ax.transAxes, fontsize=18, verticalalignment='top', bbox=props, 
-                weight = 'bold', color = 'blue')
-        xtxt = 0.04
-        ytxt = -0.67
-        text = 'www.onamet.gob.do'
+        x, y = 1300, 0
+        logo = imread('../static/ttlogo50x50.png')
+        fig.figimage(logo, x, y, zorder=100)
+
+        xtxt = 0.01
+        ytxt = -0.63
+        text = 'Fuente: Centro Nacional de Huracanes (www.nhc.noaa.gov) - Miami, Florida (USA)'
         ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=12, verticalalignment='top',
-                weight = 'bold', color = 'red')
+                weight = 'bold', color = 'r')
+
+        props = dict(boxstyle='round', facecolor='white', alpha=1)
+        x = 0.78
+        y = -0.62
+        text = '           @jmedinah09    '
+        ax.text(x, y, text, transform=ax.transAxes, fontsize=18, verticalalignment='top', bbox=props, 
+        weight = 'bold', color = 'blue')
+        
+        # iglogo = '../static/iglogo40x40'
+        # fblogo = '../static/fblogo40x40'
+        # ttlogo = '../static/ttlogo50x50'
+        # otlogo = '../static/onamet-150X43'
+        # logos = [iglogo, fblogo, ttlogo, otlogo]
+        # x, y = 652, 13
+        # for logo in logos: 
+        #     if logo == ttlogo:
+        #         y = y-5
+        #     elif logo == otlogo:
+        #         x, y = 45, 13
+        #     logo = imread(f'{logo}.png')
+        #     fig.figimage(logo, x, y, zorder=100)
+        #     x = x + 170
+        # props = dict(boxstyle='round', facecolor='white', alpha=1)
+        # xtxt = [0.546, 0.549, 0.552, 0.555]
+        # ytxt = -0.64
+        # text = '       @onamet            @onamet             @onamet'
+        # for x in xtxt:
+        #     ax.text(x, ytxt, text, transform=ax.transAxes, fontsize=18, verticalalignment='top', bbox=props, 
+        #         weight = 'bold', color = 'blue')
+        # xtxt = 0.04
+        # ytxt = -0.67
+        # text = 'www.onamet.gob.do'
+        # ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=12, verticalalignment='top',
+        #         weight = 'bold', color = 'red')
         props = dict(facecolor='whitesmoke')
         xtxt = 0.0055
         ytxt = -0.01
@@ -254,7 +291,7 @@ class NhcRssParser:
         self.tcdictgral  = tcdictgral = {
                                             'nhc_name':    [],
                                             'nhc_type':    [['tropical depression', 'tropical storm', 'hurricane', 'major hurricane', 'remnants', 'potential tropical cyclone'],
-                                                            ['la DT' , 'la TT' , 'el huracan', 'el HM', 'los remanentes', 'el PCT']], 
+                                                            ['La DT' , 'La TT' , 'El huracan', 'El HM', 'Los remanentes', 'El PCT']], 
                                             'nhc_center':  [], 
                                             'nhc_movement':['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW',                                                                   'NNW'], 
                                             'nhc_pressure':[], 
@@ -345,7 +382,7 @@ def tc_legend(ax):
                 'Depresion Tropical (DT)', 'Tormenta Tropical (TT)', 'Huracan (H)',
                 'Remanentes'
                ]
-    ax.legend(legend, labels,  loc='lower left', bbox_to_anchor=(-0.003, -0.62), fancybox=True, 
+    ax.legend(legend, labels,  loc='lower left', bbox_to_anchor=(-0.003, -0.60), fancybox=True, 
               fontsize = 18, ncol = 1, shadow = True, handletextpad = 0, labelspacing=1.1 )
     return ax
 
@@ -367,9 +404,9 @@ def fecha_hora(ax):
     fecha_y_hora = f'{Dia_de_la_semana} {current_day} de {Mes_del_Ano} de {current_year} - {current_time}'
     
     props = dict(facecolor='white', path_effects=[path_effects.withSimplePatchShadow(offset=(5,-5), alpha=1)])
-    xtxt = 0.1 #0.2
+    xtxt = 0.2 #0.1
     ytxt = 0.99
-    text = f'''EXPERIMENTAL - Vigilancia De Ciclones Tropicales Para La Republica Dominicana\n              {fecha_y_hora} - NO OFICIAL'''
+    text = f'''Vigilancia De Ciclones Tropicales Para La Republica Dominicana\n              {fecha_y_hora}'''
     return ax.text(xtxt, ytxt, text, transform=ax.transAxes, fontsize=20, verticalalignment='top', bbox=props, 
                    weight = 'bold', color = 'black', zorder = 10002)
 def calcBearing(lat, lon):

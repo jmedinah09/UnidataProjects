@@ -12,7 +12,8 @@ if      [ "$(date +%H)" -ge 20 -a "$(date +%H)" -le 23 ]; then
 fi
 
 echo "Setting up directories (If exist, removing files)..."
-caDir=~/Desktop/CCarpeta_de_Analisis/"$(date -u +%Y)"/"$(date -u +%m)"/C"$a""$(date -u +%d%m%y)"/iSAT
+# caDir=~/Desktop/CCarpeta_de_Analisis/"$(date -u +%Y)"/"$(date -u +%m)"/C"$a""$(date -u +%d%m%y)"/iSAT
+caDir=/mnt/c/Users/Carla/Desktop/CCarpeta_de_Analisis/"$(date -u +%Y)"/"$(date -u +%m)"/C"$a""$(date -u +%d%m%y)"/iSAT
 #caDir=/mnt/e/Pronostico/Carpeta_de_Analisis/"$(date +%Y)"/"$(date +%m)"/C"$a""$(date -u +%d%m%y)"/iSAT
 mkdir -p "$caDir" && cd "$caDir"/../ && find . -maxdepth 1 -type f ! -name "1.*_latest.gif" -exec rm -rf {} +  
 
@@ -30,7 +31,9 @@ echo "Downloading from NHC - TAFB..."
 
 echo "Downloading soundings from WY..."
  curl --retry 36 --retry-delay 300 -s \
-      -O "http://weather.uwyo.edu/upperair/images/"$(date +%Y%m%d)""$hr".{78486,78954,78526}.skewt.parc.gif" 
+      -O "http://weather.uwyo.edu/upperair/images/"$(date +%Y%m%d)""$hr".78486.skewt.parc.gif" \
+      -O "https://weather.uwyo.edu/upperair/images/"$(date +%Y%m%d)""$hr".78526.skewt.parc.gif"\ 
+      -O "http://weather.uwyo.edu/upperair/images/"$(date +%Y%m%d)""$hr".78526.skewt.parc.gif"
           rename 's/^/4./g' $(date +%Y%m%d)*.skewt.parc.gif    
 
 echo "Downloading wind derived products from SSEC..."
@@ -77,12 +80,32 @@ curl --retry 36 --retry-delay 300 -s \
       -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hrefv3/"$hr3"_exp/href_apcp48h_PR_f48_PRAVRGV3.gif"  \
       -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hrefv3/"$hr3"_exp/href_apcp48h_PR_f48_PRPMMNV3.gif"  \
       -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hrefv3/"$hr3"_exp/href_apcp48h_PR_f48_PRLPMMV3.gif"  \
-      -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hiresw/pr"$hr3"/hiresw_apcp48h_PR_f48_PRARWOPS.gif"  \
-      -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hiresw/pr"$hr3"/hiresw_apcp48h_PR_f48_PRARWMEM2.gif" \
-      -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hiresw/pr"$hr3"/hiresw_apcp48h_PR_f48_PRFV3.gif" 
-             rename 's/^/15.1/g'  *href_apcp24h_PR_f24*.gif
+      -O "https://www.emc.ncep.noaa.gov/mmb/mmbpll/nam_priconest/prico.pcptot60.png"                   \
+      -O "https://www.emc.ncep.noaa.gov/mmb/mmbpll/nam_priconest/prico.pcp0024h24.png"                 \
+      -O "https://www.emc.ncep.noaa.gov/mmb/mmbpll/nam_priconest/prico.pcp1236h36.png"                 \
+      -O "https://www.emc.ncep.noaa.gov/mmb/mmbpll/nam_priconest/prico.pcp2448h48.png"                 \
+      -O "https://www.emc.ncep.noaa.gov/mmb/mmbpll/nam_priconest/prico.pcp3660h60.png"                 \
+      -O "https://www.emc.ncep.noaa.gov/mmb/mmbpll/nam_priconest/prico.700[01-60:1].png"               \
+      -O "https://www.emc.ncep.noaa.gov/mmb/mmbpll/nam_priconest/prico.radarcomp[01-60:1].png"         \
+      -O "http://186.149.199.244/plots/lasted/rain/sispi_d03_2022111318_d03_rain_24h_sfc_1800-1800.png"\
+      -O "http://186.149.199.244/plots/lasted/rain/sispi_d02_2022111518_d02_rain_72h_sfc_1800-1800.png"\
+      -O "http://186.149.199.244/plots/lasted/rain/sispi_d02_2022111518_d02_rain_24h_sfc_1800-1800.png"\
+      -O "http://186.149.199.244/plots/lasted/rain/sispi_d02_2022111418_d02_rain_48h_sfc_1800-1800.png"\
+      -O "http://186.149.199.244/plots/lasted/rain/sispi_d02_2022111418_d02_rain_24h_sfc_1800-1800.png"\
+      -O "http://186.149.199.244/plots/lasted/rain/sispi_d02_2022111318_d02_rain_24h_sfc_1800-1800.png"
+
+#       -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hiresw/pr"$hr3"/hiresw_apcp48h_PR_f48_PRARWOPS.gif"  \
+#       -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hiresw/pr"$hr3"/hiresw_apcp48h_PR_f48_PRARWMEM2.gif" \
+#       -O "https://www.emc.ncep.noaa.gov/mmb/mpyle/hiresw/pr"$hr3"/hiresw_apcp48h_PR_f48_PRFV3.gif" 
+             rename 's/^/15.2/g'  *href_apcp24h_PR_f24*.gif
              rename 's/^/15.2/g'  *href_apcp48h_PR_f48*.gif
-             rename 's/^/15.2/g'  *hiresw*.gif
+#            rename 's/^/15.2/g'  *hiresw*.gif
+             rename 's/^/15.2/g'  *prico.pcp*
+             rename 's/^/15.1/g'  *prico.70*
+             rename 's/^/15.1/g'  *prico.radar*
+             rename 's/^/15.4/g'  *sispi_*
+
+
 cd iSAT/ 
 if      [ "$(date +%H)" -ge 20 -a "$(date +%H)" -le 22 ]; then 
         echo "WARNING: For satellite images update after 11:00 p.m."

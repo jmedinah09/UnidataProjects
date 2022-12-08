@@ -1,0 +1,17 @@
+__pycache__/
+.ipynb_checkpoints
+*.py[cod]
+*$py.class
+*.log
+*.grib2
+env_pypi.yml
+
+sandbox/
+sandbox.ipynb
+
+dist/*
+build/*
+*.egg-info
+MANIFEST
+.eggs/
+core.*
